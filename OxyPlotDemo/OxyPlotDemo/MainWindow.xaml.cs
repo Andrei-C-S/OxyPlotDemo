@@ -18,29 +18,9 @@ namespace OxyPlotDemo
             viewModel = new ViewModels.MainWindowModel();
             DataContext = viewModel;
 
-            CompositionTarget.Rendering += CompositionTargetRendering;
-            stopwatch.Start();
-
             InitializeComponent();
         }
-
-        private long frameCounter;
-        private System.Diagnostics.Stopwatch stopwatch = new Stopwatch();
-        private long lastUpdateMilliSeconds;
-
-        private void CompositionTargetRendering(object sender, EventArgs e)
-        {
-            if (stopwatch.ElapsedMilliseconds > lastUpdateMilliSeconds + 5000)
-            {
-                viewModel.UpdateModel();
-                Plot1.RefreshPlot(true);
-                lastUpdateMilliSeconds = stopwatch.ElapsedMilliseconds;
-            }
-        }
-
-
-
-
+        
 
     }
 }

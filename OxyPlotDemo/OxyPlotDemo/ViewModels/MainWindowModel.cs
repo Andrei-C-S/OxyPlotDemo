@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using OxyPlot;
+using OxyPlot.Wpf;
 using OxyPlot.Axes;
 using OxyPlot.Series;
 using OxyPlotDemo.Annotations;
@@ -12,98 +13,49 @@ namespace OxyPlotDemo.ViewModels
     public class MainWindowModel:  INotifyPropertyChanged
     {
         private PlotModel plotModel;
+
         public PlotModel PlotModel
         {
             get { return plotModel; }
             set { plotModel = value; OnPropertyChanged("PlotModel"); }
         }
 
-        private DateTime lastUpdate = DateTime.Now;
+        
 
         public MainWindowModel()
         {
             PlotModel = new PlotModel();
-            SetUpModel();
-            LoadData();
-        }
 
-        private readonly List<OxyColor> colors = new List<OxyColor>
-                                            {
-                                                OxyColors.Green,
-                                                OxyColors.IndianRed,
-                                                OxyColors.Coral,
-                                                OxyColors.Chartreuse,
-                                                OxyColors.Azure
-                                            };
+            var s1 = new OxyPlot.Series.LineSeries();
+            s1.Points.Add(new DataPoint(0, 4));
+            s1.Points.Add(new DataPoint(10, 13));
+            s1.Points.Add(new DataPoint(20, 15));
+            s1.Points.Add(new DataPoint(30, 16));
+            s1.Points.Add(new DataPoint(40, 12));
+            s1.Points.Add(new DataPoint(50, 12));
 
-        private readonly List<MarkerType> markerTypes = new List<MarkerType>
-                                                   {
-                                                       MarkerType.Plus,
-                                                       MarkerType.Star,
-                                                       MarkerType.Diamond,
-                                                       MarkerType.Triangle,
-                                                       MarkerType.Cross
-                                                   };
+            PlotModel.Series.Add(s1);
 
+            var l1 = new OxyPlot.Annotations.LineAnnotation();
+            l1.Type = OxyPlot.Annotations.LineAnnotationType.Horizontal;
+            l1.Y = 5;
+            l1.MinimumX = 2;
+            l1.MaximumX = 15;
+            l1.LineStyle = OxyPlot.LineStyle.Solid;
+            PlotModel.Annotations.Add(l1);
+            double x;
 
-        private void SetUpModel()
-        {
-            PlotModel.LegendTitle = "Legend";
-            PlotModel.LegendOrientation = LegendOrientation.Horizontal;
-            PlotModel.LegendPlacement = LegendPlacement.Outside;
-            PlotModel.LegendPosition = LegendPosition.TopRight;
-            PlotModel.LegendBackground = OxyColor.FromAColor(200, OxyColors.White);
-            PlotModel.LegendBorder = OxyColors.Black;
-
-            var dateAxis = new DateTimeAxis(AxisPosition.Bottom, "Date", "HH:mm") { MajorGridlineStyle = LineStyle.Solid, MinorGridlineStyle = LineStyle.Dot, IntervalLength = 80 };
-            PlotModel.Axes.Add(dateAxis);
-            var valueAxis = new LinearAxis(AxisPosition.Left, 0) { MajorGridlineStyle = LineStyle.Solid, MinorGridlineStyle = LineStyle.Dot, Title = "Value" };
-            PlotModel.Axes.Add(valueAxis);
-
-        }
-
-        private void LoadData()
-        {
-            List<Measurement> measurements = Data.GetData();
-
-            var dataPerDetector = measurements.GroupBy(m => m.DetectorId).OrderBy(m=>m.Key).ToList();
-
-            foreach (var data in dataPerDetector)
+            l1.MouseDown += (s, e) =>
             {
-                var lineSerie = new LineSeries
-                {
-                    StrokeThickness = 2,
-                    MarkerSize = 3,
-                    MarkerStroke = colors[data.Key],
-                    MarkerType = markerTypes[data.Key],
-                    CanTrackerInterpolatePoints = false,
-                    Title = string.Format("Detector {0}",data.Key),
-                    Smooth = false,
-                };
-
-                data.ToList().ForEach(d=>lineSerie.Points.Add(new DataPoint(DateTimeAxis.ToDouble(d.DateTime),d.Value)));
-                PlotModel.Series.Add(lineSerie);
-            }
-            lastUpdate = DateTime.Now;
+                x = (l1 as OxyPlot.Annotations.LineAnnotation).InverseTransform(e.Position).X;
+                l1.MinimumX = x;
+                PlotModel.RefreshPlot(true);
+                PlotModel.InvalidatePlot(true);
+                //OnPropertyChanged("PlotModel");
+                e.Handled = true;
+                
+            };
         }
-
-        public void UpdateModel()
-        {
-            List<Measurement> measurements = Data.GetUpdateData(lastUpdate);
-            var dataPerDetector = measurements.GroupBy(m => m.DetectorId).OrderBy(m => m.Key).ToList();
-
-            foreach (var data in dataPerDetector)
-            {
-                var lineSerie = PlotModel.Series[data.Key] as LineSeries;
-                if (lineSerie != null)
-                {
-                    data.ToList()
-                        .ForEach(d => lineSerie.Points.Add(new DataPoint(DateTimeAxis.ToDouble(d.DateTime), d.Value)));
-                }
-            }
-            lastUpdate = DateTime.Now;
-        }
-
 
         public event PropertyChangedEventHandler PropertyChanged;
 
